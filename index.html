@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diffusion Models: A Tutorial</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>Diffusion Models: An Introduction</h1>
+  <p>A very complete tutorial on diffusion models, great for entering the field! Disclaimer: This blog covers lots of material and is quite heavy!.</p>
+
+  <nav>
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#introduction">Introduction</a>
+        <ol>
+          <li><a href="#motivation">Motivation and History, before Diffusion we had GANs, what was before GANs?</a></li>
+          <li><a href="#overview">Visuals showing the transport between distributions, I want some visual showing N points going from gaussian slowly (not smoothly) to a smiley face distribution</a></li>
+        </ol>
+      </li>
+      <li><a href="#forward-process">DDPM paper</a>
+        <ol>
+          <li><a href="#markov-chain">forward in ddpm</a></li>
+          <li><a href="#markov-chain">backward in ddpm</a></li>
+          <li><a href="#markov-chain">loss in ddpm</a></li>
+          <li><a href="#markov-chain">DDPM sampling</a></li>
+        </ol>
+      </li>
+      <li><a href="#score-matching">Score Matching</a>
+        <ol>
+          <li><a href="#score-function">Introduction to SDEs</a></li>
+          <li><a href="#denoising-score-matching">Denoising Score Matching Yang Song et al.</a></li>
+        </ol>
+      </li>
+      <li><a href="#sampling">Sampling Algorithms</a>
+        <ol>
+          <li><a href="#ddpm-sampling">A second look on DDPM Sampling</a></li>
+          <li><a href="#ddim">DDIM: Deterministic Sampling</a></li>
+          <li><a href="#dpm-solver">DPM-Solver and Fast Samplers</a></li>
+          <li><a href="#dpm-solver">Drifting</a></li>
+        </ol>
+      </li>
+      <li><a href="#architecture">Network Architecture</a>
+        <ol>
+          <li><a href="#unet">U-Net</a></li>
+          <li><a href="#unet">DiT</a></li>
+        </ol>
+      </li>
+      <li><a href="#conditioning">Conditional Generation</a>
+        <ol>
+          <li><a href="#classifier-guidance">Classifier Guidance</a></li>
+          <li><a href="#cfg">Classifier-Free Guidance (CFG)</a></li>
+          <li><a href="#text-conditioning">Text Conditioning</a></li>
+        </ol>
+      </li>
+      <li><a href="#latent-diffusion">Latent Diffusion Models</a>
+        <ol>
+          <li><a href="#why-latent">Why Move to Latent Space? The VAE Encoder/Decoder</a></li>
+          <li><a href="#stable-diffusion">Stable Diffusion</a></li>
+        </ol>
+      </li>
+      <li><a href="#training">Training in Practice</a>
+        <ol>
+          <li><a href="#training-tricks">All the tricks in practice: Breaking down the codebase from EDM2 and explaining</a></li>
+          <li><a href="#evaluation">Evaluation Metrics: different FDs, IS the fd dinov2 paper</a></li>
+        </ol>
+      </li>
+      <li><a href="#extensions">Cool things to go look into</a>
+        <ol>
+          <li><a href="#video">Video and 3D Diffusion</a></li>
+          <li><a href="#flow-matching">Flow Matching</a></li>
+          <li><a href="#">Theoretical results: S Chen paper and things that came after that, sample complexity, ...</a></li>
+          <li><a href="#consistency">Consistency Models</a></li>
+        </ol>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Sections -->
+
+  <h2 id="introduction">1. Introduction</h2>
+
+  <h3 id="motivation">1a. Motivation and History</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="overview">1b. Visuals: Transport Between Distributions</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="forward-process">2. DDPM Paper</h2>
+
+  <h3 id="markov-chain">2a. Forward Process in DDPM</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>2b. Backward Process in DDPM</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>2c. Loss in DDPM</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>2d. DDPM Sampling</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="score-matching">3. Score Matching</h2>
+
+  <h3 id="score-function">3a. Introduction to SDEs</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="denoising-score-matching">3b. Denoising Score Matching (Yang Song et al.)</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="sampling">4. Sampling Algorithms</h2>
+
+  <h3 id="ddpm-sampling">4a. A Second Look at DDPM Sampling</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="ddim">4b. DDIM: Deterministic Sampling</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="dpm-solver">4c. DPM-Solver and Fast Samplers</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>4d. Drifting</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="architecture">5. Network Architecture</h2>
+
+  <h3 id="unet">5a. U-Net</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>5b. DiT</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="conditioning">6. Conditional Generation</h2>
+
+  <h3 id="classifier-guidance">6a. Classifier Guidance</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="cfg">6b. Classifier-Free Guidance (CFG)</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="text-conditioning">6c. Text Conditioning</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="latent-diffusion">7. Latent Diffusion Models</h2>
+
+  <h3 id="why-latent">7a. Why Move to Latent Space? The VAE Encoder/Decoder</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="stable-diffusion">7b. Stable Diffusion</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="training">8. Training in Practice</h2>
+
+  <h3 id="training-tricks">8a. All the Tricks in Practice: Breaking Down the EDM2 Codebase</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="evaluation">8b. Evaluation Metrics: FDs, IS, and the FD-DINOv2 Paper</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h2 id="extensions">9. Cool Things to Go Look Into</h2>
+
+  <h3 id="video">9a. Video and 3D Diffusion</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="flow-matching">9b. Flow Matching</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3>9c. Theoretical Results: S. Chen et al. and Sample Complexity</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+  <h3 id="consistency">9d. Consistency Models</h3>
+  <p class="placeholder">Content coming soon.</p>
+
+</body>
+</html>
