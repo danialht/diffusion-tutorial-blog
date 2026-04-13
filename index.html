@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Diffusion Models: A Tutorial</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pseudocode@2.4.1/build/pseudocode.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/pseudocode@2.4.1/build/pseudocode.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 </head>
 <body>
 
@@ -120,8 +136,86 @@
   <h3 id="score-function">3a. Introduction to SDEs</h3>
   <p class="placeholder">Content coming soon.</p>
 
-  <h3 id="denoising-score-matching">3b. Denoising Score Matching (Yang Song et al.)</h3>
-  <p class="placeholder">Content coming soon.</p>
+  <h3 id="denoising-score-matching">Denoising Score Matching</h3>
+  
+  Score: For every distribution $p$ the score function is defined as $s(x) = \nabla_x \log p(x)$. It points in the direction of higher density.
+
+  Learning the score function is an implicit way to learn the distribution. The score function integrates to the log likelihood, but more importantly, using the score function of some distribution there is a genius way to sample from that distirbution, using <strong> Langevin dynamics</strong>.
+  
+  Here is the algorithm:
+
+  <pre id="langevin-algo">
+  \begin{algorithm}
+  \caption{Langevin Dynamics Sampling}
+  \begin{algorithmic}
+  \State Sample $X$ from any distribution
+  \For{$i = 1, 2, \ldots, K$}
+    \State $z_i \sim \mathcal{N}(0, I)$
+    \State $X \leftarrow X + \frac{\epsilon}{2} \nabla \log p(X) + \sqrt{\epsilon}\, z_i$
+  \EndFor
+  \Return $X$
+  \end{algorithmic}
+  \end{algorithm}
+  </pre>
+  <script>
+    pseudocode.renderElement(document.getElementById("langevin-algo"));
+  </script>
+
+  <pre><code class="language-python">import numpy as np
+
+N = 10_000  # num samples
+K = 100
+EPSILON = 0.1
+
+x = 4*(np.random.rand(N)-0.5)  # initial distribution = Uniform(-2, 2)
+mu, sigma = 1, 1.5
+score_fn = lambda x: -(x - mu) / sigma**2
+
+for _ in range(K):
+    z = np.random.randn(N)
+    x += EPSILON/2 * score_fn(x) + EPSILON**.5 * z</code></pre>
+
+  <img src="media/langevine_dynamics.png" alt="Langevin dynamics convergence" style="width: 100%; max-width: 1200px; display: block; margin: 1rem 0;">
+
+    learning the score function is called <strong>score matching</strong>. It is an implicit method to learn the distirbution, meaning that we are not going to learn the likelihood directly.
+
+    There is an obstacle when it comes to learning the score function, and that is that we don't have it, we are usually given a dataset that has datapoints, in order to have the score function we need to have the distribution itself.
+    
+    The datapoints that we have represent some empirical distribution that is spiky in some points and zero everywhere else, in order to get the score function we are going to smooth out this distribution.
+
+    smoothing out means that instead of looking at the distribution $p(x)$ we are going to consider the distribution $p_\sigma(x)$. The noisy distribution is defined like this:
+    
+    Sample from the distribution $p(x)$ and then add noise $\sigma z$ where $z$ is gaussian, then you have a sample from the noisy distribution.
+
+    A way to think of this perturbing, noisifying or smoothing out is that, we are estimating the distribution (that we have N samples from) with a with a mixture of N gaussians around these N samples, and we are estimating the score of the distribution that the N samples came from with the score of this mixture of Gaussians.
+
+    There are a couple of questions: How much noise should we add? If we want to estimate the score somewhere that is far from the samples, should we use a lot of noise, or a small noise? what if we want to estimate the score somewhere that is close to the samples.
+
+    we  need large noise when we are estimating the scoer far from the samples and we need small noise if we are close to the samples.
+
+    So a proposed method for sampling is this:
+
+    train a score network to learn the score for each noisy distribution, $s_{\theta}(\sigma, x) \approx \nabla \log p_\sigma(x)$
+
+  <pre id="annealed-langevin-algo">
+\begin{algorithm}
+\caption{Annealed Langevin Dynamics}
+\begin{algorithmic}
+\Require noise schedule $\sigma_1 < \sigma_2 < \cdots < \sigma_K$, score network $s_\theta$, step sizes $\{\epsilon_i\}$, steps per level $T$
+\State Sample $X \sim \pi(x)$ \Comment{any initial distribution}
+\For{$i = K, K-1, \ldots, 1$}
+  \For{$t = 1, 2, \ldots, T$}
+    \State $z \sim \mathcal{N}(0, I)$
+    \State $X \leftarrow X + \frac{\epsilon_i}{2} s_\theta(X, \sigma_i) + \sqrt{\epsilon_i}\, z$
+  \EndFor
+\EndFor
+\Return $X$
+\end{algorithmic}
+\end{algorithm}
+  </pre>
+  <script>
+    pseudocode.renderElement(document.getElementById("annealed-langevin-algo"));
+  </script>
 
   <h2 id="sampling">4. Sampling Algorithms</h2>
 
