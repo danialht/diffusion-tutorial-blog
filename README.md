@@ -29,6 +29,6 @@ Run all scripts to regenerate the images and animations:
 These are the scripts that their files are ready to use:
 
 ```bash
-python "distribution transport.py"
+python distribution_transport.py
 python score-matching/langevine_dynamics.py
 ```
