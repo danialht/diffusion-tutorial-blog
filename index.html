@@ -118,12 +118,29 @@
   </div>
 
   <h2 id="forward-process">2. DDPM Paper</h2>
-
+  <p>
+    Denoising diffusion probability models (DDPM) were introduced in a very famous paper by <a href="https://arxiv.org/pdf/2006.11239" target="_blank">Ho et. al</a>
+    The goal for something like image generation is to be able to sample from a complicated distribution $p(x)$ such as the space of all realistic images or the space of all pictures of human faces. However, sampling from a distribution like this is very hard. In contrast, sampling from a normal distribution is super easy. So, can we start with a normal distribution (to get the randomness) and then work our way towards the desired distribution? The answer is yes! But how do we work our way back? The idea in this paper is that we learn the inverse of a markov chain that converts from $p(x)$ to the normal distribution.
+  </p>
   <h3 id="markov-chain">2a. Forward Process in DDPM</h3>
-  <p class="placeholder">Content coming soon.</p>
+  <p>
+    A very easy markov chain that does this is one that that adds noise at each step like this one:
+    $$X_{t+1} = \sqrt{\alpha_t}X_t + \sqrt{1-\alpha_t} Z_t \Longleftrightarrow q(x_{t+1}|x_t) = \mathcal N(\sqrt{\alpha_t}x_t, (1 - \alpha_t)I_d)$$
+    where $Z_t \sim \mathcal N(0, I_d)$. If you simulate a few steps, you can see that if you define $\bar\alpha_t = \prod_{s = 1}^t \alpha_s$, then
+    $$X_t \sim \mathcal N(\sqrt{\bar\alpha_t} X_0, (1 - \bar\alpha_t) I_d)$$
+    Therefore, after adding enough noise, after a certain time $t$, $X_t$ will effectively be distributed as a unit normal distribution. Here's what that process looks like for the smiley face distribution.
+    <div style="display: flex; justify-content: center; margin: 16px 0;">
+      <video controls preload="metadata" style="width: 360px; max-width: 90%;">
+        <source src="media/smiley_forward_process.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </p>
 
   <h3>2b. Backward Process in DDPM</h3>
-  <p class="placeholder">Content coming soon.</p>
+  <p>
+    
+  </p>
 
   <h3>2c. Loss in DDPM</h3>
   <p class="placeholder">Content coming soon.</p>
