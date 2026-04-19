@@ -192,7 +192,7 @@ for _ in range(K):
     z = np.random.randn(N)
     x += EPSILON/2 * score_fn(x) + EPSILON**.5 * z</code></pre>
 
-  <img src="media/langevine_dynamics.png" alt="Langevin dynamics convergence" style="width: 100%; max-width: 1200px; display: block; margin: 1rem 0;">
+  <img src="media/langevin_dynamics.png" alt="Langevin dynamics convergence" style="width: 100%; max-width: 1200px; display: block; margin: 1rem 0;">
 
     learning the score function is called <strong>score matching</strong>. It is an implicit method to learn the distirbution, meaning that we are not going to learn the likelihood directly.
 
@@ -214,25 +214,45 @@ for _ in range(K):
 
     train a score network to learn the score for each noisy distribution, $s_{\theta}(\sigma, x) \approx \nabla \log p_\sigma(x)$
 
+
+  begin: the algorithm for annealed langevin dynamics
   <pre id="annealed-langevin-algo">
-\begin{algorithm}
-\caption{Annealed Langevin Dynamics}
-\begin{algorithmic}
-\Require noise schedule $\sigma_1 < \sigma_2 < \cdots < \sigma_K$, score network $s_\theta$, step sizes $\{\epsilon_i\}$, steps per level $T$
-\State Sample $X \sim \pi(x)$ \Comment{any initial distribution}
-\For{$i = K, K-1, \ldots, 1$}
-  \For{$t = 1, 2, \ldots, T$}
-    \State $z \sim \mathcal{N}(0, I)$
-    \State $X \leftarrow X + \frac{\epsilon_i}{2} s_\theta(X, \sigma_i) + \sqrt{\epsilon_i}\, z$
+  \begin{algorithm}
+  \caption{Annealed Langevin Dynamics}
+  \begin{algorithmic}
+  \Require noise schedule $\sigma_1 < \sigma_2 < \cdots < \sigma_K$, score network $s_\theta$, step sizes $\{\epsilon_i\}$, steps per level $T$
+  \State Sample $X \sim \pi(x)$ \Comment{any initial distribution}
+  \For{$i = K, K-1, \ldots, 1$}
+    \For{$t = 1, 2, \ldots, T$}
+      \State $z \sim \mathcal{N}(0, I)$
+      \State $X \leftarrow X + \frac{\epsilon_i}{2} s_\theta(X, \sigma_i) + \sqrt{\epsilon_i}\, z$
+    \EndFor
   \EndFor
-\EndFor
-\Return $X$
-\end{algorithmic}
-\end{algorithm}
+  \Return $X$
+  \end{algorithmic}
+  \end{algorithm}
   </pre>
   <script>
     pseudocode.renderElement(document.getElementById("annealed-langevin-algo"));
   </script>
+
+  SDE lens: <br />
+  Now let's start viewing this through another lens, langevin dynamics incentivized use to learn the score function and use that for sampling. Now will focus more on the forward process and will introduce a new notion.
+  Assume a family of random variables $\{X_t\}_{t \in [0, T]}$ such that $X_t \sim p_t(x)$. Each $X_t$ has a different distribution but changing $t$ slightly will not disturb the distribution a lot, i.e. distribution of $X_t$ and $X_{t+\delta t}$ are the same in the limit $\delta t \rightarrow 0$. This is a good thing, since now you can sample from $X_t$ and perturb the samples a bit and have some samples from $X_{t+\delta t}$, the perturbation could be deterministic or stochastic, like moving all the samples in a direction for length $a\delta t$, or adding a gaussian with variance $\sigma \delta t$.
+  We can describe this change of the distribution of $X_t$ that happens because of the change in $t$ with a SDE (Stochastic Differential Equation). Here is a general form of a SDE:
+  
+  \[dX_t = f(X_t, t) dt + g(t) dW_t\]
+
+  The first term is called the drift and the second term is called the diffusion. For every $t$ this SDE defines a relation between the distribution of $X_t$ and $X_{t+\delta t}$ for $\delta t \rightarrow 0$ in this way: In order to sample from the distribution $X_{t+\delta t}$ you can sample from $X_t$ and then add a deterministic perturbation term to the sample with that is $f(X_t, t)dt$ and then on top of that add a stochastic perturbation $g(t) dW$ where $g(t)$ is a scalar and $dW$ is a gaussian with variance $dt$. 
+  Now let's look at some examples of SDEs: <br />
+  Example 1: <br />
+  \[ dX_t = \sigma(t) dW_t \]
+  this SDE keeps adding gaussian noise to $X_t$ as $t$ grows. Let's say that the initial distribution is $\delta(0)$, meaning that $X_0=0$ with probability 1, then what would be the distribution of $X_t$?
+  Well, $X_t$ is $0$ (according to the boundary condition) plus a many small gaussians that are independent from each other, $X_t$ is also Gaussian, we can add up the means of the differential Gaussians that were added to make find the mean of $X_t$, in order to find the variance we could add up the variance of the differential Gaussians sine they are i.i.d. and thus we will have:
+  \[\mathbb{E}[X_t] = 0, \quad \text{Var}[X_t] = \int_0^t \sigma^2(s) ds\]
+  \[\Rightarrow X_t \sim \mathcal{N}(0, \int_0^t \sigma^2(s) ds) \]
+  
+  Example 2: <br />
 
   <h2 id="sampling">4. Sampling Algorithms</h2>
 
