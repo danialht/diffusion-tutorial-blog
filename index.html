@@ -155,11 +155,11 @@
 
   <h3 id="denoising-score-matching">Denoising Score Matching</h3>
   
-  Score: For every distribution $p$ the score function is defined as $s(x) = \nabla_x \log p(x)$. It points in the direction of higher density.
+  For every distribution $p$, the <strong>score function</strong> is defined as $s(x) = \nabla_x \log p(x)$. At any point $x$, it is a vector pointing in the direction of steepest increase in log-density, in other words, toward where the distribution puts more of its mass.
 
-  Learning the score function is an implicit way to learn the distribution. The score function integrates to the log likelihood, but more importantly, using the score function of some distribution there is a genius way to sample from that distirbution, using <strong> Langevin dynamics</strong>.
+  The nice thing about the score function is that it lets you work with a distribution without ever normalizing it. You don't need the partition function, just the gradient of the log of whatever unnormalized density you have. And crucially, knowing the score is enough to draw samples since there is an elegant algorithm for this called <strong>Langevin dynamics</strong>.
   
-  Here is the algorithm:
+  Here is the algorithm pseudocode and a simple python impolementation:
 
   <pre id="langevin-algo">
   \begin{algorithm}
@@ -194,25 +194,16 @@ for _ in range(K):
 
   <img src="media/langevin_dynamics.png" alt="Langevin dynamics convergence" style="width: 100%; max-width: 1200px; display: block; margin: 1rem 0;">
 
-    learning the score function is called <strong>score matching</strong>. It is an implicit method to learn the distirbution, meaning that we are not going to learn the likelihood directly.
+    Training a model to learn the score function is called <strong>score matching</strong>. Rather than learning the likelihood $p(x)$ directly, we only learn its gradient, which turns out to be enough for sampling.
 
-    There is an obstacle when it comes to learning the score function, and that is that we don't have it, we are usually given a dataset that has datapoints, in order to have the score function we need to have the distribution itself.
-    
-    The datapoints that we have represent some empirical distribution that is spiky in some points and zero everywhere else, in order to get the score function we are going to smooth out this distribution.
+    The catch is that we never actually have $p(x)$. All we have is a dataset of samples, which represents a spiky empirical distribution, positive at the data points and zero everywhere else. The score of something that spiky is not useful. So we smooth it out first.
 
-    smoothing out means that instead of looking at the distribution $p(x)$ we are going to consider the distribution $p_\sigma(x)$. The noisy distribution is defined like this:
-    
-    Sample from the distribution $p(x)$ and then add noise $\sigma z$ where $z$ is gaussian, then you have a sample from the noisy distribution.
+    The smoothed distribution $p_\sigma(x)$ is simple to define: draw a sample $x$ from your dataset, then add Gaussian noise $\sigma z$. The result is a sample from $p_\sigma$. Geometrically, this is equivalent to replacing each data point with a Gaussian of width $\sigma$ centered on it, so you get a mixture of $N$ Gaussians, and you estimate the score of $p$ with the score of that mixture.
 
-    A way to think of this perturbing, noisifying or smoothing out is that, we are estimating the distribution (that we have N samples from) with a with a mixture of N gaussians around these N samples, and we are estimating the score of the distribution that the N samples came from with the score of this mixture of Gaussians.
+    This raises a natural question: how much noise should you add? Too little, and the score is only well-estimated near the data points, useless when sampling starts far away. Too much, and the score points toward a blob that no longer resembles the data. The answer is that you need both: use a large $\sigma$ when you are far from the data, and a small $\sigma$ when you are close.
 
-    There are a couple of questions: How much noise should we add? If we want to estimate the score somewhere that is far from the samples, should we use a lot of noise, or a small noise? what if we want to estimate the score somewhere that is close to the samples.
-
-    we  need large noise when we are estimating the scoer far from the samples and we need small noise if we are close to the samples.
-
-    So a proposed method for sampling is this:
-
-    train a score network to learn the score for each noisy distribution, $s_{\theta}(\sigma, x) \approx \nabla \log p_\sigma(x)$
+    This leads to the idea of training a single score network conditioned on the noise level:
+    \[ s_\theta(\sigma, x) \approx \nabla \log p_\sigma(x) \]
 
 
   begin: the algorithm for annealed langevin dynamics
@@ -236,7 +227,7 @@ for _ in range(K):
     pseudocode.renderElement(document.getElementById("annealed-langevin-algo"));
   </script>
 
-  SDE lens: <br />
+  Introduction to SDEs: <br />
   Now let's start viewing this through another lens, langevin dynamics incentivized use to learn the score function and use that for sampling. Now will focus more on the forward process and will introduce a new notion.
   Assume a family of random variables $\{X_t\}_{t \in [0, T]}$ such that $X_t \sim p_t(x)$. Each $X_t$ has a different distribution but changing $t$ slightly will not disturb the distribution a lot, i.e. distribution of $X_t$ and $X_{t+\delta t}$ are the same in the limit $\delta t \rightarrow 0$. This is a good thing, since now you can sample from $X_t$ and perturb the samples a bit and have some samples from $X_{t+\delta t}$, the perturbation could be deterministic or stochastic, like moving all the samples in a direction for length $a\delta t$, or adding a gaussian with variance $\sigma \delta t$.
   We can describe this change of the distribution of $X_t$ that happens because of the change in $t$ with a SDE (Stochastic Differential Equation). Here is a general form of a SDE:
@@ -245,14 +236,56 @@ for _ in range(K):
 
   The first term is called the drift and the second term is called the diffusion. For every $t$ this SDE defines a relation between the distribution of $X_t$ and $X_{t+\delta t}$ for $\delta t \rightarrow 0$ in this way: In order to sample from the distribution $X_{t+\delta t}$ you can sample from $X_t$ and then add a deterministic perturbation term to the sample with that is $f(X_t, t)dt$ and then on top of that add a stochastic perturbation $g(t) dW$ where $g(t)$ is a scalar and $dW$ is a gaussian with variance $dt$. 
   Now let's look at some examples of SDEs: <br />
-  Example 1: <br />
+  <strong>Example 1:</strong> <br />
   \[ dX_t = \sigma(t) dW_t \]
   this SDE keeps adding gaussian noise to $X_t$ as $t$ grows. Let's say that the initial distribution is $\delta(0)$, meaning that $X_0=0$ with probability 1, then what would be the distribution of $X_t$?
   Well, $X_t$ is $0$ (according to the boundary condition) plus a many small gaussians that are independent from each other, $X_t$ is also Gaussian, we can add up the means of the differential Gaussians that were added to make find the mean of $X_t$, in order to find the variance we could add up the variance of the differential Gaussians sine they are i.i.d. and thus we will have:
   \[\mathbb{E}[X_t] = 0, \quad \text{Var}[X_t] = \int_0^t \sigma^2(s) ds\]
   \[\Rightarrow X_t \sim \mathcal{N}(0, \int_0^t \sigma^2(s) ds) \]
   
-  Example 2: <br />
+  <strong>Example 2:</strong> <br />
+  \[ dX_t = -\frac{\beta}{2} X_t \, dt + \sqrt{\beta} \, dW_t \]
+  with a constant $\beta > 0$ chosen large (say $\beta = 10$). Let the initial distribution be a mixture of Gaussians:
+  \[ X_0 \sim \sum_k w_k \,\mathcal{N}(\mu_k, \sigma_k^2) \]
+  We will show that $X_0$ is a mixture of Gaussians and $X_1 \approx \mathcal{N}(0,1)$. <br /><br />
+
+  Let's solve this SDE. The drift term $-\frac{\beta}{2} X_t \, dt$ makes this harder than Example 1 because the noise added at each step gets multiplied by the exponential decay before reaching time $t$.
+  The standard trick is an integrating factor. Let $Y_t = e^{\beta t/2} X_t$. (Usually we need Itô's calculus to deal with derivatives in SDEs, but in this example we can get away with just using regular calculus):
+  \[ dY_t = \frac{\beta}{2} e^{\beta t/2} X_t \, dt + e^{\beta t/2} \, dX_t = e^{\beta t/2}\sqrt{\beta} \, dW_t \]
+  (the drift terms cancel). This is exactly Example 1's SDE for $Y_t$, so we can integrate directly:
+  \[ Y_t = Y_0 + \sqrt{\beta} \int_0^t e^{\beta s/2} \, dW_s \]
+  Substituting back $X_t = e^{-\beta t/2} Y_t$:
+  \[ X_t = e^{-\beta t/2} X_0 + \sqrt{\beta} \int_0^t e^{-\beta(t-s)/2} \, dW_s \]
+  The stochastic integral is independent of $X_0$ and is Gaussian with mean $0$ and variance:
+  \[ \beta \int_0^t e^{-\beta(t-s)} \, ds = \beta \cdot \frac{1 - e^{-\beta t}}{\beta} = 1 - e^{-\beta t} \]
+  Therefore:
+  \[ X_t \mid X_0 \;\sim\; \mathcal{N}\!\left(e^{-\beta t/2} X_0,\; 1 - e^{-\beta t}\right) \]
+
+  Marginalizing over $X_0$, and using the fact that a Gaussian mixture stays a Gaussian mixture when each component is passed through a linear Gaussian channel:
+  \[ p_t(x) = \sum_k w_k \,\mathcal{N}\!\left(x;\; e^{-\beta t/2}\mu_k,\; e^{-\beta t}\sigma_k^2 + (1 - e^{-\beta t})\right) \]
+
+  At $t=0$. Plug in $t=0$: $e^0 = 1$, so the mean of each component is $\mu_k$ and the variance is $\sigma_k^2 + 0 = \sigma_k^2$. This recovers the original mixture exactly.<br />
+
+  At $t=1$. For large $\beta$, $e^{-\beta} \approx 0$. Every component in the mixture has:
+  \[ \text{mean} \approx e^{-\beta/2} \mu_k \approx 0, \qquad \text{variance} \approx e^{-\beta}\sigma_k^2 + 1 \approx 1 \]
+  All $K$ components have collapsed to essentially $\mathcal{N}(0,1)$, regardless of their original means and variances. Since $\sum_k w_k = 1$:
+  \[ p_1 \approx \mathcal{N}(0, 1) \quad \]
+  This is the key mechanism behind diffusion models: the drift pulls everything toward the origin while the noise inflates the variance toward $1$, and these two effects conspire to erase the structure of the original distribution.
+
+  <div class="theorem">
+    <strong>Theorem</strong> (Anderson, 1982). Let $\{X_t\}_{t \in [0,T]}$ satisfy the forward SDE
+    \[ dX_t = f(X_t, t)\, dt + g(t)\, dW_t \]
+    with marginal densities $\{p_t\}$. Then the time-reversed process $\{\tilde X_t\}_{t \in [0,T]}$, defined by running time backwards from $T$ to $0$, satisfies the reverse SDE
+    \[ d\tilde X_t = \bigl[f(\tilde X_t, t) - g(t)^2 \,\nabla_x \log p_t(\tilde X_t)\bigr]\, dt + g(t)\, d\bar W_t \]
+    where $d\bar W_t$ is a Brownian motion running backwards in time, and $\tilde X_T \sim p_T$.
+  </div>
+
+  <strong>Example 3:</strong> Applying the theorem to Example 2. By plugging $f(x,t) = -\frac{\beta}{2}x$ and $g(t) = \sqrt{\beta}$ into the reverse SDE, we get:
+  \[ d\tilde X_t = \left[-\frac{\beta}{2}\tilde X_t - \beta\, \nabla_x \log p_t(\tilde X_t)\right] dt + \sqrt{\beta}\, d\bar W_t \]
+  where $p_t$ is the mixture-of-Gaussians marginal we derived in Example 2. If we initialize $\tilde X_1 \sim \mathcal{N}(0,1)$ and run this SDE backwards from $t=1$ to $t=0$, the distribution at $t=0$ will be (approximately) the original mixture of Gaussians. The proof is left to the reader as an exercise.
+  You proabably have noticed the inverse SDE and inverse time that we have mentioned here, it is not anything complicated, basically it just means that we are moving from $t=1$ to $t=0$, so $dt<0$, otherwise the reverse SDE would not make sense because if $dt>0$ the samples far away would be moving away from the target distribution not towards. There is another notation that some people use and that is using a new time measure $\tau=T-t$ and then the reverse-time SDE is just a regular SDE with the time $\tau$ moving from $0$ to $T$, and you will use $dW_\tau$ in that. <br />
+
+  Using the theorem we just mentioned, we can now use score matching and learn the score, after that in order to sample from the target distribution we can just run a discretized version of the reverse SDE and that's it! We will talk about different methods of discretizing and sampling the SDE.
 
   <h2 id="sampling">4. Sampling Algorithms</h2>
 

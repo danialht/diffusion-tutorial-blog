@@ -53,6 +53,12 @@ nav ol ol {
   margin-top: 0.2rem;
   list-style-type: lower-alpha;
 }
+.theorem {
+  border-left: 3px solid #555;
+  padding: 0.7rem 1.1rem;
+  margin: 1.4rem 0;
+  background: #bae3ff;
+}
 .placeholder {
   color: #888;
   font-style: italic;
