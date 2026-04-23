@@ -153,13 +153,18 @@
   <h3 id="score-function">3a. Introduction to SDEs</h3>
   <p class="placeholder">Content coming soon.</p>
 
+  <!-- REV anandj: Make this section 3a and remove the introduction to SDEs above -->
   <h3 id="denoising-score-matching">Denoising Score Matching</h3>
   
+  <!-- REV anandj: Nit, instead of talking about mass, you can just say something like towards the higher probability region. You could also mention that it points in the same direction as the gradient of the probability distribution: \nabla p(x)-->
   For every distribution $p$, the <strong>score function</strong> is defined as $s(x) = \nabla_x \log p(x)$. At any point $x$, it is a vector pointing in the direction of steepest increase in log-density, in other words, toward where the distribution puts more of its mass.
 
-  The nice thing about the score function is that it lets you work with a distribution without ever normalizing it. You don't need the partition function, just the gradient of the log of whatever unnormalized density you have. And crucially, knowing the score is enough to draw samples since there is an elegant algorithm for this called <strong>Langevin dynamics</strong>.
+  <!-- REV anandj: Nit, A nice thing instead of The nice thing-->
+  <!-- REV anandj: Talking about the partition function seems unecessarily complicated when all you want to say that the score of the unnormalized probability distribution is the same as that of the normalized -->
+  The nice thing about the score function is that it lets you work with a distribution without ever normalizing it. You don't need the partition function, just the gradient of the log of whatever unnormalized density you have. And crucially, knowing the score is enough to draw samples from the distribution since there is an elegant algorithm for this called <strong>Langevin dynamics</strong>.
   
-  Here is the algorithm pseudocode and a simple python impolementation:
+  <!-- REV anandj: Add a comment(s) in the python code indicating that p(x) in this case is a normal distribution. Might be worth doing something besides a normal distribution so that there's no confusion between the additive noise and the desired distribution. Maybe mixture of 2 gaussians? If the gaussians are centered around +/- mu the score is very clean. It would be nice to see a bimodal distribution. Only drawback is slight increase in complexity. -->
+  Here is the algorithm pseudocode and a simple Python implementation:
 
   <pre id="langevin-algo">
   \begin{algorithm}
@@ -178,6 +183,7 @@
     pseudocode.renderElement(document.getElementById("langevin-algo"));
   </script>
 
+  <!-- IDEA anandj: Would be kind of cool if this python code was editable and rerunning it would regenerate the digaram below. Or maybe we should just link notebooks with examples. -->
   <pre><code class="language-python">import numpy as np
 
 N = 10_000  # num samples
@@ -205,8 +211,9 @@ for _ in range(K):
     This leads to the idea of training a single score network conditioned on the noise level:
     \[ s_\theta(\sigma, x) \approx \nabla \log p_\sigma(x) \]
 
-
+  <!-- REV anandj: What's this begin: line for? -->
   begin: the algorithm for annealed langevin dynamics
+  <!-- REV anandj: I think it might be helpful to show the advantage of annealing instead of just keeping the distribution spiky. For example you could show a graph or visualization of how fast they converge and then show that annealed Langevin dynamics converges faster than keping the score stationary? Possible intuition is that the large noise score helps spread the probability distribution around and then decreasing the noise sharpens the distribution. Keeping it sharp makes it harder for probability distribution spread out - they tend to go to the modes in the target distribution. Would also be helpful to add this intuition to the text. -->
   <pre id="annealed-langevin-algo">
   \begin{algorithm}
   \caption{Annealed Langevin Dynamics}
@@ -227,8 +234,11 @@ for _ in range(K):
     pseudocode.renderElement(document.getElementById("annealed-langevin-algo"));
   </script>
 
+  <!-- REV anandj: You probably want to make this section 3b -->
   Introduction to SDEs: <br />
-  Now let's start viewing this through another lens, langevin dynamics incentivized use to learn the score function and use that for sampling. Now will focus more on the forward process and will introduce a new notion.
+  Now let's start viewing this through another lens, Langevin dynamics incentivized us to learn the score function and use that for sampling. Now we will focus more on the forward process and will introduce a new notion.
+  <!-- REV anandj: I think the gaussian should have variance $\sigma^2\delta t$ -->
+  <!-- REV anandj: I'm not sure this is the best way to introduce it. I think it's more intuitive to explain $X$ as a random path through the space such that considered independently the distribution of $X_t$ is $p_t(x)$. The connection to brownian motion is also more apparent then. -->
   Assume a family of random variables $\{X_t\}_{t \in [0, T]}$ such that $X_t \sim p_t(x)$. Each $X_t$ has a different distribution but changing $t$ slightly will not disturb the distribution a lot, i.e. distribution of $X_t$ and $X_{t+\delta t}$ are the same in the limit $\delta t \rightarrow 0$. This is a good thing, since now you can sample from $X_t$ and perturb the samples a bit and have some samples from $X_{t+\delta t}$, the perturbation could be deterministic or stochastic, like moving all the samples in a direction for length $a\delta t$, or adding a gaussian with variance $\sigma \delta t$.
   We can describe this change of the distribution of $X_t$ that happens because of the change in $t$ with a SDE (Stochastic Differential Equation). Here is a general form of a SDE:
   
@@ -236,24 +246,28 @@ for _ in range(K):
 
   The first term is called the drift and the second term is called the diffusion. For every $t$ this SDE defines a relation between the distribution of $X_t$ and $X_{t+\delta t}$ for $\delta t \rightarrow 0$ in this way: In order to sample from the distribution $X_{t+\delta t}$ you can sample from $X_t$ and then add a deterministic perturbation term to the sample with that is $f(X_t, t)dt$ and then on top of that add a stochastic perturbation $g(t) dW$ where $g(t)$ is a scalar and $dW$ is a gaussian with variance $dt$. 
   Now let's look at some examples of SDEs: <br />
+  <!-- IDEA anandj: I think it might to have the examples be drop downs. By default they're folded so that you can go through the text faster. You just open them up for more clarification. The folded version would just have the conclusion of the proof displayed. -->
   <strong>Example 1:</strong> <br />
   \[ dX_t = \sigma(t) dW_t \]
   this SDE keeps adding gaussian noise to $X_t$ as $t$ grows. Let's say that the initial distribution is $\delta(0)$, meaning that $X_0=0$ with probability 1, then what would be the distribution of $X_t$?
-  Well, $X_t$ is $0$ (according to the boundary condition) plus a many small gaussians that are independent from each other, $X_t$ is also Gaussian, we can add up the means of the differential Gaussians that were added to make find the mean of $X_t$, in order to find the variance we could add up the variance of the differential Gaussians sine they are i.i.d. and thus we will have:
+  Well, $X_t$ is $X_0 = 0$ plus many small gaussians that are independent from each other. This means that $X_t$ is also Gaussian. Therefore, we can add up the means of the differential Gaussians that were added to make find the mean of $X_t$. In order to find the variance we could add up the variance of the differential Gaussians since they are independent and thus we have:
   \[\mathbb{E}[X_t] = 0, \quad \text{Var}[X_t] = \int_0^t \sigma^2(s) ds\]
   \[\Rightarrow X_t \sim \mathcal{N}(0, \int_0^t \sigma^2(s) ds) \]
   
   <strong>Example 2:</strong> <br />
+  <!-- REV anandj: This example comes across as very complicated. One thing you can do to help build intuition is to point out that it is the continuous version of the ddpm forward process. -->
   \[ dX_t = -\frac{\beta}{2} X_t \, dt + \sqrt{\beta} \, dW_t \]
   with a constant $\beta > 0$ chosen large (say $\beta = 10$). Let the initial distribution be a mixture of Gaussians:
   \[ X_0 \sim \sum_k w_k \,\mathcal{N}(\mu_k, \sigma_k^2) \]
-  We will show that $X_0$ is a mixture of Gaussians and $X_1 \approx \mathcal{N}(0,1)$. <br /><br />
-
+  We will show that although $X_0$ is a mixture of Gaussians, $X_1 \approx \mathcal{N}(0,1)$. <br /><br />
+  
+  <!-- REV anandj: I would slightly edit it so that it's clear that the e^{\beta t/2}$ term is there to counteract the exponential decay from the drift term to make computation easier. -->
   Let's solve this SDE. The drift term $-\frac{\beta}{2} X_t \, dt$ makes this harder than Example 1 because the noise added at each step gets multiplied by the exponential decay before reaching time $t$.
   The standard trick is an integrating factor. Let $Y_t = e^{\beta t/2} X_t$. (Usually we need Itô's calculus to deal with derivatives in SDEs, but in this example we can get away with just using regular calculus):
   \[ dY_t = \frac{\beta}{2} e^{\beta t/2} X_t \, dt + e^{\beta t/2} \, dX_t = e^{\beta t/2}\sqrt{\beta} \, dW_t \]
   (the drift terms cancel). This is exactly Example 1's SDE for $Y_t$, so we can integrate directly:
   \[ Y_t = Y_0 + \sqrt{\beta} \int_0^t e^{\beta s/2} \, dW_s \]
+  <!-- REV anandj: You should fully solve for $Y_t$(make it a normal dist like in ex 1) and then convert back to $X$. It's much easier to see then since the dW_t calculation can be a bit scary for someone who's never seen it before -->
   Substituting back $X_t = e^{-\beta t/2} Y_t$:
   \[ X_t = e^{-\beta t/2} X_0 + \sqrt{\beta} \int_0^t e^{-\beta(t-s)/2} \, dW_s \]
   The stochastic integral is independent of $X_0$ and is Gaussian with mean $0$ and variance:
@@ -261,6 +275,7 @@ for _ in range(K):
   Therefore:
   \[ X_t \mid X_0 \;\sim\; \mathcal{N}\!\left(e^{-\beta t/2} X_0,\; 1 - e^{-\beta t}\right) \]
 
+  <!-- This sentence is unecessarily complicated imo. Just expand X_t|X_0 into e^{-bt/2}X_0 + N(0, 1 - e^{-bt}) and then the next line becomes obvious-->
   Marginalizing over $X_0$, and using the fact that a Gaussian mixture stays a Gaussian mixture when each component is passed through a linear Gaussian channel:
   \[ p_t(x) = \sum_k w_k \,\mathcal{N}\!\left(x;\; e^{-\beta t/2}\mu_k,\; e^{-\beta t}\sigma_k^2 + (1 - e^{-\beta t})\right) \]
 
@@ -272,6 +287,7 @@ for _ in range(K):
   \[ p_1 \approx \mathcal{N}(0, 1) \quad \]
   This is the key mechanism behind diffusion models: the drift pulls everything toward the origin while the noise inflates the variance toward $1$, and these two effects conspire to erase the structure of the original distribution.
 
+    <!-- REV anandj: I would move the theorem into Example 3 -->
   <div class="theorem">
     <strong>Theorem</strong> (Anderson, 1982). Let $\{X_t\}_{t \in [0,T]}$ satisfy the forward SDE
     \[ dX_t = f(X_t, t)\, dt + g(t)\, dW_t \]
@@ -283,9 +299,11 @@ for _ in range(K):
   <strong>Example 3:</strong> Applying the theorem to Example 2. By plugging $f(x,t) = -\frac{\beta}{2}x$ and $g(t) = \sqrt{\beta}$ into the reverse SDE, we get:
   \[ d\tilde X_t = \left[-\frac{\beta}{2}\tilde X_t - \beta\, \nabla_x \log p_t(\tilde X_t)\right] dt + \sqrt{\beta}\, d\bar W_t \]
   where $p_t$ is the mixture-of-Gaussians marginal we derived in Example 2. If we initialize $\tilde X_1 \sim \mathcal{N}(0,1)$ and run this SDE backwards from $t=1$ to $t=0$, the distribution at $t=0$ will be (approximately) the original mixture of Gaussians. The proof is left to the reader as an exercise.
-  You proabably have noticed the inverse SDE and inverse time that we have mentioned here, it is not anything complicated, basically it just means that we are moving from $t=1$ to $t=0$, so $dt<0$, otherwise the reverse SDE would not make sense because if $dt>0$ the samples far away would be moving away from the target distribution not towards. There is another notation that some people use and that is using a new time measure $\tau=T-t$ and then the reverse-time SDE is just a regular SDE with the time $\tau$ moving from $0$ to $T$, and you will use $dW_\tau$ in that. <br />
+  <!-- REV anandj: Nit, your explanation of this is a bit verbose and I would tighten. -->
+  You have probably noticed the inverse SDE and inverse time that we have mentioned here. It is not anything complicated. It just means that we are moving from $t=1$ to $t=0$. As a result $dt<0$. Otherwise, the reverse SDE would not make sense because if $dt>0$ the samples far away would be moving away from the target distribution not towards. There is another notation that some people use and that is using a new time measure $\tau=T-t$ and then the reverse-time SDE is just a regular SDE with the time $\tau$ moving from $0$ to $T$, and you will use $dW_\tau$ in that. <br />
 
-  Using the theorem we just mentioned, we can now use score matching and learn the score, after that in order to sample from the target distribution we can just run a discretized version of the reverse SDE and that's it! We will talk about different methods of discretizing and sampling the SDE.
+  <!-- REV anandj: It's not apparent right now when reading this why you would want to do this instead of just the Langevin dynamics. Part of the benefit here is that it should be exactly distributed at time t = 1 whereas Langevin is just supposed to converge at some point to the stationary distribution -->
+  Using the theorem we just mentioned, we can now use score matching and learn the score, after that in order to sample from the target distribution we can just run a discretized version of the reverse SDE and that's it! We will now talk about different methods of discretizing and sampling the SDE.
 
   <h2 id="sampling">4. Sampling Algorithms</h2>
 
