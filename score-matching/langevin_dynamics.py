@@ -5,17 +5,18 @@ from pathlib import Path
 def main():
     N = 10_000  # num samples
     K = 100
-    EPSILON = 0.1
+    EPSILON = 0.05
 
     x = 4*(np.random.rand(N)-0.5)  # initial distribution = Uniform(-2, 2)
-    mu, sigma = 1, 1.5
-    score_fn = lambda x: -(x - mu) / sigma**2
+    mu, sigma = 2, 1.0
+    # score_fn = lambda x: -(x - mu) / sigma**2 # score function for N(mu, sigma^2)
+    score_fn = lambda x: (1/sigma**2) * (-x+mu*np.tanh(x*mu/sigma**2))  # score function for mixture of N(-mu, sigma^2) and N(mu, sigma^2)
 
     snapshots = []
     snapshot_iters = list(range(0, K + 1, 20))
 
-    x_plt = np.linspace(mu - 4*sigma, mu + 4*sigma, 300)
-    y_true = 1/(2*np.pi*sigma**2)**.5 * np.exp(-0.5 * (x_plt - mu)**2 / sigma**2)
+    x_plt = np.linspace(-4*sigma, 4*sigma, 300)
+    y_true = 0.5/(2*np.pi*sigma**2)**.5 * np.exp(-0.5 * (x_plt - mu)**2 / sigma**2) + 0.5/(2*np.pi*sigma**2)**.5 * np.exp(-0.5 * (x_plt + mu)**2 / sigma**2)
 
     for i in range(K):
         if i in snapshot_iters:
